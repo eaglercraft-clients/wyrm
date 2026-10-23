@@ -35,6 +35,7 @@ import com.viaversion.viaversion.protocols.v1_12_2to1_13.data.BlockIdData;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.data.MappingData1_13;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.data.SoundSource1_12_2;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.data.SpawnEggMappings1_13;
+import com.viaversion.viaversion.protocols.v1_12_2to1_13.eagler.EaglerChannelBridge;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.packet.ClientboundPackets1_13;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.packet.ServerboundPackets1_13;
 import com.viaversion.viaversion.protocols.v1_12to1_12_1.packet.ClientboundPackets1_12_1;
@@ -139,7 +140,7 @@ public class ItemPacketRewriter1_13 extends ItemRewriter<ClientboundPackets1_12_
                         handleTradeList(wrapper);
                     } else {
                         String old = channel;
-                        channel = getNewPluginChannelId(channel);
+                        channel = getNewPluginChannelId(wrapper.user(), channel);
                         if (channel == null) {
                             if (Via.getConfig().logOtherConversionWarnings()) {
                                 protocol.getLogger().warning("Ignoring clientbound plugin message with channel: " + old);
@@ -150,7 +151,7 @@ public class ItemPacketRewriter1_13 extends ItemRewriter<ClientboundPackets1_12_
                             String[] channels = new String(wrapper.read(Types.REMAINING_BYTES), StandardCharsets.UTF_8).split("\0");
                             List<String> rewrittenChannels = new ArrayList<>();
                             for (String s : channels) {
-                                String rewritten = getNewPluginChannelId(s);
+                                String rewritten = getNewPluginChannelId(wrapper.user(), s);
                                 if (rewritten != null) {
                                     rewrittenChannels.add(rewritten);
                                 } else if (Via.getConfig().logOtherConversionWarnings()) {
@@ -203,7 +204,7 @@ public class ItemPacketRewriter1_13 extends ItemRewriter<ClientboundPackets1_12_
                 handler(wrapper -> {
                     String channel = wrapper.get(Types.STRING, 0);
                     String old = channel;
-                    channel = getOldPluginChannelId(channel);
+                    channel = getOldPluginChannelId(wrapper.user(), channel);
                     if (channel == null) {
                         if (Via.getManager().isDebug()) {
                             protocol.getLogger().warning("Ignoring serverbound plugin message with channel: " + old);
@@ -214,7 +215,7 @@ public class ItemPacketRewriter1_13 extends ItemRewriter<ClientboundPackets1_12_
                         String[] channels = new String(wrapper.read(Types.SERVERBOUND_CUSTOM_PAYLOAD_DATA), StandardCharsets.UTF_8).split("\0");
                         List<String> rewrittenChannels = new ArrayList<>();
                         for (String s : channels) {
-                            String rewritten = getOldPluginChannelId(s);
+                            String rewritten = getOldPluginChannelId(wrapper.user(), s);
                             if (rewritten != null) {
                                 rewrittenChannels.add(rewritten);
                             } else if (Via.getManager().isDebug()) {
@@ -441,6 +442,18 @@ public class ItemPacketRewriter1_13 extends ItemRewriter<ClientboundPackets1_12_
         item.setIdentifier(Protocol1_12_2To1_13.MAPPINGS.getItemMappings().getNewId(rawId));
         item.setData((short) 0);
         return item;
+    }
+
+    /** Like {@link #getNewPluginChannelId(String)}, but lets Eaglercraft's channels through under {@code eag:} names. */
+    public static String getNewPluginChannelId(UserConnection user, String old) {
+        final String eagler = EaglerChannelBridge.toModern(user, old);
+        return eagler != null ? eagler : getNewPluginChannelId(old);
+    }
+
+    /** Like {@link #getOldPluginChannelId(String)}, but restores the spelling an Eaglercraft server used. */
+    public static String getOldPluginChannelId(UserConnection user, String newId) {
+        final String eagler = EaglerChannelBridge.toLegacy(user, newId);
+        return eagler != null ? eagler : getOldPluginChannelId(newId);
     }
 
     public static String getNewPluginChannelId(String old) {

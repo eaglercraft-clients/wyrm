@@ -74,6 +74,8 @@ public class AbstractViaConfig extends Config implements ViaVersionConfig {
     private boolean logTextComponentConversionErrors;
     private boolean multiReddustColorFix;
     private boolean disable1_13TabComplete;
+    private boolean eaglerChannelBridge;
+    private List<String> eaglerExtraChannels;
     private boolean teamColourFix;
     private boolean serversideBlockConnections;
     private boolean reduceBlockStorageMemory;
@@ -149,6 +151,8 @@ public class AbstractViaConfig extends Config implements ViaVersionConfig {
         teamColourFix = getBoolean("team-colour-fix", true);
         multiReddustColorFix = getBoolean("multi-reddust-color-fix", false);
         disable1_13TabComplete = getBoolean("disable-1_13-auto-complete", false);
+        eaglerChannelBridge = getBoolean("eagler-channel-bridge", true);
+        eaglerExtraChannels = getListSafe("eagler-extra-channels", String.class, "Invalid Eagler extra channel in config: '%s'");
         serversideBlockConnections = getBoolean("serverside-blockconnections", true);
         reduceBlockStorageMemory = getBoolean("reduce-blockstorage-memory", false);
         flowerStemWhenBlockAbove = getBoolean("flowerstem-when-block-above", false);
@@ -495,6 +499,16 @@ public class AbstractViaConfig extends Config implements ViaVersionConfig {
     @Override
     public boolean logTextComponentConversionErrors() {
         return logTextComponentConversionErrors || Via.getManager().isDebug();
+    }
+
+    @Override
+    public boolean isEaglerChannelBridge() {
+        return eaglerChannelBridge;
+    }
+
+    @Override
+    public List<String> getEaglerExtraChannels() {
+        return eaglerExtraChannels;
     }
 
     @Override

@@ -317,6 +317,25 @@ public interface ViaVersionConfig extends Config {
      */
     boolean logTextComponentConversionErrors();
 
+    /**
+     * Should Eaglercraft's plugin channels ({@code EAG|...}) be carried across the 1.12.2 / 1.13 boundary as
+     * {@code eag:...} channels instead of being dropped?
+     *
+     * @return true if enabled
+     */
+    default boolean isEaglerChannelBridge() {
+        return true;
+    }
+
+    /**
+     * Additional pre-1.13 plugin channel names, besides those starting with {@code EAG|}, to carry as Eaglercraft channels.
+     *
+     * @return extra channel names
+     */
+    default java.util.List<String> getEaglerExtraChannels() {
+        return java.util.Collections.emptyList();
+    }
+
     @Deprecated(forRemoval = true)
     default boolean isSuppressConversionWarnings() {
         return !logOtherConversionWarnings();
