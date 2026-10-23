@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "viaversion",
+  "name": "ViaVersion",
+  "version": "${version}",
+  "description": "${description}",
+  "license": "GPL-3.0",
+  "contact": {
+    "homepage": "https://viaversion.com/",
+    "issues": "https://github.com/ViaVersion/ViaVersion/issues",
+    "sources": "https://github.com/ViaVersion/ViaVersion"
+  },
+  "icon": "assets/viaversion/textures/squarelogo.png",
+  "environment": "*",
+  "authors": [
+    "_MylesC",
+    "creeper123123321",
+    "Gerrygames",
+    "kennytv",
+    "Matsv",
+    "EnZaXD",
+    "RK_01"
+  ],
+  "depends": {
+    "viafabric": ">=0.4.14"
+  },
+  "custom": {
+    "modmenu:api": true,
+    "modmenu": {
+      "badges": [ "library" ],
+      "parent": "viafabric"
+    }
+  }
+}

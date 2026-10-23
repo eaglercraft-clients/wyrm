@@ -1,0 +1,384 @@
+/*
+ * This file is part of ViaVersion - https://github.com/ViaVersion/ViaVersion
+ * Copyright (C) 2016-2026 ViaVersion and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.viaversion.viaversion.protocols.v1_20_3to1_20_5;
+
+import com.viaversion.viaversion.api.connection.UserConnection;
+import com.viaversion.viaversion.api.minecraft.ProfileKey;
+import com.viaversion.viaversion.api.minecraft.RegistryType;
+import com.viaversion.viaversion.api.minecraft.data.StructuredDataKey;
+import com.viaversion.viaversion.api.minecraft.entities.EntityTypes1_20_5;
+import com.viaversion.viaversion.api.protocol.AbstractProtocol;
+import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
+import com.viaversion.viaversion.api.protocol.packet.State;
+import com.viaversion.viaversion.api.protocol.packet.provider.PacketTypesProvider;
+import com.viaversion.viaversion.api.protocol.packet.provider.SimplePacketTypesProvider;
+import com.viaversion.viaversion.api.type.Types;
+import com.viaversion.viaversion.api.type.types.chunk.ChunkType1_20_2;
+import com.viaversion.viaversion.api.type.types.misc.ParticleType;
+import com.viaversion.viaversion.api.type.types.version.VersionedTypes;
+import com.viaversion.viaversion.data.entity.EntityTrackerBase;
+import com.viaversion.viaversion.protocols.base.ClientboundLoginPackets;
+import com.viaversion.viaversion.protocols.base.ServerboundLoginPackets;
+import com.viaversion.viaversion.protocols.v1_20_2to1_20_3.packet.ClientboundConfigurationPackets1_20_3;
+import com.viaversion.viaversion.protocols.v1_20_2to1_20_3.packet.ClientboundPacket1_20_3;
+import com.viaversion.viaversion.protocols.v1_20_2to1_20_3.packet.ClientboundPackets1_20_3;
+import com.viaversion.viaversion.protocols.v1_20_2to1_20_3.packet.ServerboundPacket1_20_3;
+import com.viaversion.viaversion.protocols.v1_20_2to1_20_3.packet.ServerboundPackets1_20_3;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.data.MappingData1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ClientboundConfigurationPackets1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ClientboundPacket1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ClientboundPackets1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ServerboundConfigurationPackets1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ServerboundPacket1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.packet.ServerboundPackets1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.rewriter.BlockItemPacketRewriter1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.rewriter.ComponentRewriter1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.rewriter.EntityPacketRewriter1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.rewriter.ParticleRewriter1_20_5;
+import com.viaversion.viaversion.connection.ProtocolStorablesBase;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.storage.AcknowledgedMessagesStorage;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.storage.ProtocolStorables1_20_5;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.storage.ScoreboardTeamStorage;
+import com.viaversion.viaversion.protocols.v1_20_3to1_20_5.storage.TagKeys;
+import com.viaversion.viaversion.protocols.v1_20to1_20_2.packet.ServerboundConfigurationPackets1_20_2;
+import com.viaversion.viaversion.rewriter.BlockRewriter;
+import com.viaversion.viaversion.rewriter.TagRewriter;
+import com.viaversion.viaversion.rewriter.text.JsonNBTComponentRewriter;
+import com.viaversion.viaversion.util.ProtocolLogger;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+
+import static com.viaversion.viaversion.util.ProtocolUtil.packetTypeMap;
+
+public final class Protocol1_20_3To1_20_5 extends AbstractProtocol<ClientboundPacket1_20_3, ClientboundPacket1_20_5, ServerboundPacket1_20_3, ServerboundPacket1_20_5> {
+
+    public static final MappingData1_20_5 MAPPINGS = new MappingData1_20_5();
+    public static final ProtocolLogger LOGGER = new ProtocolLogger(Protocol1_20_3To1_20_5.class);
+    // Mojang will remove this in the next release, so if we were to set this to false,
+    // people would miss the changes and not fix their plugins before forcefully running into the errors then
+    public static boolean strictErrorHandling = System.getProperty("viaversion.strict-error-handling1_20_5", "true").equalsIgnoreCase("true");
+    private final EntityPacketRewriter1_20_5 entityRewriter = new EntityPacketRewriter1_20_5(this);
+    private final BlockItemPacketRewriter1_20_5 itemRewriter = new BlockItemPacketRewriter1_20_5(this);
+    private final ParticleRewriter1_20_5 particleRewriter = new ParticleRewriter1_20_5(this);
+    private final TagRewriter<ClientboundPacket1_20_3> tagRewriter = new TagRewriter<>(this) {
+        @Override
+        public void handleGeneric(final PacketWrapper wrapper) {
+            super.handleGeneric(wrapper);
+            wrapper.resetReader();
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(Protocol1_20_3To1_20_5.this);
+            storables.setTagKeys(new TagKeys(wrapper));
+        }
+    };
+    private final ComponentRewriter1_20_5<ClientboundPacket1_20_3> componentRewriter = new ComponentRewriter1_20_5<>(this, VersionedTypes.V1_20_5.structuredData);
+    private final BlockRewriter<ClientboundPacket1_20_3> blockRewriter = BlockRewriter.for1_20_2(this, ChunkType1_20_2::new);
+
+    public Protocol1_20_3To1_20_5() {
+        super(ClientboundPacket1_20_3.class, ClientboundPacket1_20_5.class, ServerboundPacket1_20_3.class, ServerboundPacket1_20_5.class);
+    }
+
+    @Override
+    protected void registerPackets() {
+        super.registerPackets();
+
+        registerClientbound(State.LOGIN, ClientboundLoginPackets.HELLO, wrapper -> {
+            wrapper.passthrough(Types.STRING); // Server ID
+            wrapper.passthrough(Types.BYTE_ARRAY_PRIMITIVE); // Public key
+            wrapper.passthrough(Types.BYTE_ARRAY_PRIMITIVE); // Challenge
+            wrapper.write(Types.BOOLEAN, true); // Authenticate
+        });
+
+        replaceClientbound(ClientboundPackets1_20_3.SERVER_DATA, wrapper -> {
+            componentRewriter.passthroughAndProcess(wrapper); // MOTD
+            wrapper.passthrough(Types.OPTIONAL_BYTE_ARRAY_PRIMITIVE); // Icon
+
+            // Moved to join game
+            final boolean enforcesSecureChat = wrapper.read(Types.BOOLEAN);
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final AcknowledgedMessagesStorage storage = storables.acknowledgedMessages();
+            storage.setSecureChatEnforced(enforcesSecureChat);
+            if (enforcesSecureChat) {
+                // Only send the chat session to the server if we know that it is required
+                storage.sendQueuedChatSession(wrapper);
+            }
+        });
+
+        registerServerbound(ServerboundPackets1_20_5.CHAT, wrapper -> {
+            wrapper.passthrough(Types.STRING); // Message
+            wrapper.passthrough(Types.LONG); // Timestamp
+
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final AcknowledgedMessagesStorage storage = storables.acknowledgedMessages();
+            final long salt = wrapper.read(Types.LONG);
+            final byte[] signature = wrapper.read(Types.OPTIONAL_SIGNATURE_BYTES);
+            if (storage.isSecureChatEnforced()) {
+                // Fake it till you make it
+                wrapper.write(Types.LONG, salt);
+                wrapper.write(Types.OPTIONAL_SIGNATURE_BYTES, signature);
+            } else {
+                // Go the safer route and strip the signature. No signature means no verification
+                wrapper.write(Types.LONG, 0L);
+                wrapper.write(Types.OPTIONAL_SIGNATURE_BYTES, null);
+            }
+
+            fixChatAck(wrapper, storage);
+        });
+        registerServerbound(ServerboundPackets1_20_5.CHAT_COMMAND_SIGNED, ServerboundPackets1_20_3.CHAT_COMMAND, wrapper -> {
+            wrapper.passthrough(Types.STRING); // Command
+            wrapper.passthrough(Types.LONG); // Timestamp
+
+            // See above, strip signatures if we can to prevent verification of possibly bad signatures
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final AcknowledgedMessagesStorage storage = storables.acknowledgedMessages();
+            final long salt = wrapper.read(Types.LONG);
+            final int signatures = wrapper.read(Types.VAR_INT);
+            if (storage.isSecureChatEnforced()) {
+                wrapper.write(Types.LONG, salt);
+                wrapper.write(Types.VAR_INT, signatures);
+                for (int i = 0; i < signatures; i++) {
+                    wrapper.passthrough(Types.STRING); // Argument name
+                    wrapper.passthrough(Types.SIGNATURE_BYTES); // Signature
+                }
+            } else {
+                // Remove signatures
+                wrapper.write(Types.LONG, 0L);
+                wrapper.write(Types.VAR_INT, 0); // No signatures
+                for (int i = 0; i < signatures; i++) {
+                    wrapper.read(Types.STRING); // Argument name
+                    wrapper.read(Types.SIGNATURE_BYTES); // Signature
+                }
+            }
+
+            fixChatAck(wrapper, storage);
+        });
+        registerServerbound(ServerboundPackets1_20_5.CHAT_ACK, wrapper -> {
+            final int offset = wrapper.read(Types.VAR_INT);
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final int fixedOffset = storables.acknowledgedMessages().accumulateAckCount(offset);
+            if (fixedOffset > 0) {
+                wrapper.write(Types.VAR_INT, fixedOffset);
+            } else {
+                wrapper.cancel();
+            }
+        });
+        registerServerbound(ServerboundPackets1_20_5.CHAT_COMMAND, wrapper -> {
+            wrapper.passthrough(Types.STRING); // Command
+
+            wrapper.write(Types.LONG, System.currentTimeMillis()); // Timestamp
+            wrapper.write(Types.LONG, 0L); // Salt
+            wrapper.write(Types.VAR_INT, 0); // No signatures
+
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            writeSpoofedChatAck(wrapper, storables.acknowledgedMessages());
+        });
+        registerServerbound(ServerboundPackets1_20_5.CHAT_SESSION_UPDATE, wrapper -> {
+            // Delay this until we know whether the server enforces secure chat
+            // The server sends this info in SERVER_DATA, but the client already sends this after receiving the game login
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final AcknowledgedMessagesStorage storage = storables.acknowledgedMessages();
+            if (storage.secureChatEnforced() != null && storage.secureChatEnforced()) {
+                // We already know that secure chat is enforced, let it through
+                return;
+            }
+
+            final UUID sessionId = wrapper.read(Types.UUID);
+            final ProfileKey profileKey = wrapper.read(Types.PROFILE_KEY);
+            storage.queueChatSession(sessionId, profileKey);
+
+            wrapper.cancel();
+        });
+
+        appendClientbound(ClientboundPackets1_20_3.START_CONFIGURATION, wrapper -> {
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            storables.setAcknowledgedMessages(new AcknowledgedMessagesStorage());
+        });
+
+        registerClientbound(State.LOGIN, ClientboundLoginPackets.LOGIN_FINISHED, wrapper -> {
+            wrapper.passthrough(Types.UUID); // UUID
+            wrapper.passthrough(Types.STRING); // Name
+            wrapper.passthrough(Types.PROFILE_PROPERTY_ARRAY);
+            wrapper.write(Types.BOOLEAN, strictErrorHandling);
+        });
+
+        replaceClientbound(ClientboundPackets1_20_3.SET_PLAYER_TEAM, wrapper -> {
+            final ProtocolStorables1_20_5 storables = wrapper.user().storables(this);
+            final ScoreboardTeamStorage storage = storables.scoreboardTeams();
+
+            final String teamName = wrapper.passthrough(Types.STRING);
+            final byte action = wrapper.passthrough(Types.BYTE);
+            if (action == 0) {
+                componentRewriter.passthroughAndProcess(wrapper); // Display name
+                wrapper.passthrough(Types.BYTE); // Flags
+                wrapper.passthrough(Types.STRING); // Name Tag Visibility
+                wrapper.passthrough(Types.STRING); // Collision rule
+                wrapper.passthrough(Types.VAR_INT); // Color
+                componentRewriter.passthroughAndProcess(wrapper); // Prefix
+                componentRewriter.passthroughAndProcess(wrapper); // Suffix
+                storage.createTeam(teamName);
+                final String[] players = wrapper.passthrough(Types.STRING_ARRAY);
+                storage.addPlayerToTeam(teamName, players);
+            } else if (action == 1) {
+                storage.removeTeam(teamName);
+            } else if (action == 3) {
+                final String[] players = wrapper.passthrough(Types.STRING_ARRAY);
+                storage.addPlayerToTeam(teamName, players);
+            }
+
+            if (action != 4) {
+                return;
+            }
+
+            final String[] players = wrapper.read(Types.STRING_ARRAY);
+            // Drop invalid remove packets to not break when plugins do that, since strict error handling is enforced in newer protocols.
+            final Set<String> filteredPlayers = new HashSet<>();
+            for (final String player : players) {
+                final String team = storage.getPlayerTeam(player);
+                if (!Objects.equals(team, teamName)) {
+                    break;
+                }
+
+                storage.removeFromTeam(teamName, player);
+                filteredPlayers.add(player);
+            }
+
+            if (!filteredPlayers.isEmpty()) {
+                wrapper.write(Types.STRING_ARRAY, filteredPlayers.toArray(new String[0]));
+            } else {
+                wrapper.cancel();
+            }
+        });
+
+        cancelServerbound(State.LOGIN, ServerboundLoginPackets.COOKIE_RESPONSE.getId());
+        cancelServerbound(ServerboundConfigurationPackets1_20_5.COOKIE_RESPONSE);
+        cancelServerbound(ServerboundConfigurationPackets1_20_5.SELECT_KNOWN_PACKS);
+        cancelServerbound(ServerboundPackets1_20_5.COOKIE_RESPONSE);
+        cancelServerbound(ServerboundPackets1_20_5.DEBUG_SUBSCRIPTION_REQUEST);
+    }
+
+    private void fixChatAck(final PacketWrapper wrapper, final AcknowledgedMessagesStorage storage) {
+        final int offset = wrapper.read(Types.VAR_INT);
+        final BitSet acknowledged = wrapper.read(Types.ACKNOWLEDGED_BIT_SET);
+        final int fixedOffset = storage.updateFromMessage(offset, acknowledged);
+        wrapper.write(Types.VAR_INT, fixedOffset);
+        // Never change this, as this message (and future ones) are signed with it
+        wrapper.write(Types.ACKNOWLEDGED_BIT_SET, acknowledged);
+    }
+
+    private void writeSpoofedChatAck(final PacketWrapper wrapper, final AcknowledgedMessagesStorage storage) {
+        // As we don't have the new state from the client, replay what we last received
+        wrapper.write(Types.VAR_INT, 0); // Offset
+        wrapper.write(Types.ACKNOWLEDGED_BIT_SET, storage.createSpoofedAck()); // Acknowledged
+    }
+
+    @Override
+    protected void onMappingDataLoaded() {
+        EntityTypes1_20_5.initialize(this);
+        ParticleType.Fillers.fill1_20_5(this, VersionedTypes.V1_20_5.particle);
+        VersionedTypes.V1_20_5.structuredData.filler(this)
+            .add(StructuredDataKey.CUSTOM_DATA).add(StructuredDataKey.MAX_STACK_SIZE).add(StructuredDataKey.MAX_DAMAGE)
+            .add(StructuredDataKey.DAMAGE).add(StructuredDataKey.UNBREAKABLE1_20_5).add(StructuredDataKey.RARITY)
+            .add(StructuredDataKey.HIDE_TOOLTIP).add(StructuredDataKey.FOOD1_20_5).add(StructuredDataKey.FIRE_RESISTANT)
+            .add(StructuredDataKey.CUSTOM_NAME).add(StructuredDataKey.LORE).add(StructuredDataKey.ENCHANTMENTS1_20_5)
+            .add(StructuredDataKey.CAN_PLACE_ON1_20_5).add(StructuredDataKey.CAN_BREAK1_20_5).add(StructuredDataKey.ATTRIBUTE_MODIFIERS1_20_5)
+            .add(StructuredDataKey.CUSTOM_MODEL_DATA1_20_5).add(StructuredDataKey.HIDE_ADDITIONAL_TOOLTIP).add(StructuredDataKey.REPAIR_COST)
+            .add(StructuredDataKey.CREATIVE_SLOT_LOCK).add(StructuredDataKey.ENCHANTMENT_GLINT_OVERRIDE).add(StructuredDataKey.INTANGIBLE_PROJECTILE)
+            .add(StructuredDataKey.STORED_ENCHANTMENTS1_20_5).add(StructuredDataKey.DYED_COLOR1_20_5).add(StructuredDataKey.MAP_COLOR)
+            .add(StructuredDataKey.MAP_ID).add(StructuredDataKey.MAP_DECORATIONS).add(StructuredDataKey.MAP_POST_PROCESSING)
+            .add(StructuredDataKey.POTION_CONTENTS1_20_5)
+            .add(StructuredDataKey.SUSPICIOUS_STEW_EFFECTS).add(StructuredDataKey.WRITABLE_BOOK_CONTENT).add(StructuredDataKey.WRITTEN_BOOK_CONTENT)
+            .add(StructuredDataKey.TRIM1_20_5).add(StructuredDataKey.DEBUG_STICK_STATE).add(StructuredDataKey.ENTITY_DATA1_20_5)
+            .add(StructuredDataKey.BUCKET_ENTITY_DATA).add(StructuredDataKey.BLOCK_ENTITY_DATA1_20_5).add(StructuredDataKey.INSTRUMENT1_20_5)
+            .add(StructuredDataKey.RECIPES).add(StructuredDataKey.LODESTONE_TRACKER).add(StructuredDataKey.FIREWORK_EXPLOSION)
+            .add(StructuredDataKey.FIREWORKS).add(StructuredDataKey.PROFILE1_20_5).add(StructuredDataKey.NOTE_BLOCK_SOUND)
+            .add(StructuredDataKey.BANNER_PATTERNS).add(StructuredDataKey.BASE_COLOR).add(StructuredDataKey.POT_DECORATIONS1_20_5)
+            .add(StructuredDataKey.BLOCK_STATE).add(StructuredDataKey.BEES1_20_5)
+            .add(StructuredDataKey.LOCK1_20_5).add(StructuredDataKey.CONTAINER_LOOT).add(StructuredDataKey.TOOL1_20_5)
+            .add(StructuredDataKey.ITEM_NAME).add(StructuredDataKey.OMINOUS_BOTTLE_AMPLIFIER)
+            .add(VersionedTypes.V1_20_5.structuredDataKeys().keys());
+
+        tagRewriter.renameTag(RegistryType.ITEM, "minecraft:axolotl_tempt_items", "minecraft:axolotl_food");
+        tagRewriter.removeTag(RegistryType.ITEM, "minecraft:tools");
+        tagRewriter.addEmptyTags(RegistryType.BLOCK, "minecraft:badlands_terracotta");
+        tagRewriter.addEmptyTags(RegistryType.ITEM, "minecraft:enchantable/mace");
+
+        super.onMappingDataLoaded();
+    }
+
+    @Override
+    public void init(final UserConnection connection) {
+        addEntityTracker(connection, new EntityTrackerBase(connection, EntityTypes1_20_5.PLAYER));
+        final ProtocolStorables1_20_5 storables = connection.storables(this);
+        connection.put(storables.armorTrims());
+    }
+
+    @Override
+    public ProtocolStorablesBase createStorables() {
+        return new ProtocolStorables1_20_5();
+    }
+
+    @Override
+    public MappingData1_20_5 getMappingData() {
+        return MAPPINGS;
+    }
+
+    @Override
+    public ProtocolLogger getLogger() {
+        return LOGGER;
+    }
+
+    @Override
+    public EntityPacketRewriter1_20_5 getEntityRewriter() {
+        return entityRewriter;
+    }
+
+    @Override
+    public BlockItemPacketRewriter1_20_5 getItemRewriter() {
+        return itemRewriter;
+    }
+
+    @Override
+    public BlockRewriter<ClientboundPacket1_20_3> getBlockRewriter() {
+        return blockRewriter;
+    }
+
+    @Override
+    public ParticleRewriter1_20_5 getParticleRewriter() {
+        return particleRewriter;
+    }
+
+    @Override
+    public TagRewriter<ClientboundPacket1_20_3> getTagRewriter() {
+        return tagRewriter;
+    }
+
+    public JsonNBTComponentRewriter<ClientboundPacket1_20_3> getComponentRewriter() {
+        return componentRewriter;
+    }
+
+    @Override
+    protected PacketTypesProvider<ClientboundPacket1_20_3, ClientboundPacket1_20_5, ServerboundPacket1_20_3, ServerboundPacket1_20_5> createPacketTypesProvider() {
+        return new SimplePacketTypesProvider<>(
+            packetTypeMap(unmappedClientboundPacketType, ClientboundPackets1_20_3.class, ClientboundConfigurationPackets1_20_3.class),
+            packetTypeMap(mappedClientboundPacketType, ClientboundPackets1_20_5.class, ClientboundConfigurationPackets1_20_5.class),
+            packetTypeMap(mappedServerboundPacketType, ServerboundPackets1_20_3.class, ServerboundConfigurationPackets1_20_2.class),
+            packetTypeMap(unmappedServerboundPacketType, ServerboundPackets1_20_5.class, ServerboundConfigurationPackets1_20_5.class)
+        );
+    }
+}

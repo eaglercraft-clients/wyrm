@@ -1,0 +1,128 @@
+/*
+ * This file is part of ViaVersion - https://github.com/ViaVersion/ViaVersion
+ * Copyright (C) 2016-2026 ViaVersion and contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.viaversion.viaversion.api.minecraft.item.data;
+
+import com.viaversion.nbt.tag.Tag;
+import com.viaversion.viaversion.api.connection.UserConnection;
+import com.viaversion.viaversion.api.minecraft.EitherHolder;
+import com.viaversion.viaversion.api.minecraft.Holder;
+import com.viaversion.viaversion.api.minecraft.SoundEvent;
+import com.viaversion.viaversion.api.minecraft.codec.Ops;
+import com.viaversion.viaversion.api.protocol.Protocol;
+import com.viaversion.viaversion.api.type.TransformingType;
+import com.viaversion.viaversion.api.type.Type;
+import com.viaversion.viaversion.api.type.Types;
+import com.viaversion.viaversion.api.type.types.misc.EitherHolderType;
+import com.viaversion.viaversion.api.type.types.misc.HolderType;
+import com.viaversion.viaversion.util.Key;
+import com.viaversion.viaversion.util.Rewritable;
+import io.netty.buffer.ByteBuf;
+
+public record JukeboxPlayable(EitherHolder<JukeboxSong> song, boolean showInTooltip) implements Rewritable {
+
+    public JukeboxPlayable(final Holder<JukeboxSong> song, final boolean showInTooltip) {
+        this(EitherHolder.of(song), showInTooltip);
+    }
+
+    public JukeboxPlayable(final String resourceKey, final boolean showInTooltip) {
+        this(EitherHolder.of(resourceKey), showInTooltip);
+    }
+
+    public static final Type<JukeboxPlayable> TYPE1_21 = new Type<>(JukeboxPlayable.class) {
+        @Override
+        public JukeboxPlayable read(final ByteBuf buffer) {
+            final EitherHolder<JukeboxSong> song = EitherHolderType.read(buffer, JukeboxSong.TYPE);
+            final boolean showInTooltip = buffer.readBoolean();
+            return new JukeboxPlayable(song, showInTooltip);
+        }
+
+        @Override
+        public void write(final ByteBuf buffer, final JukeboxPlayable value) {
+            EitherHolderType.write(buffer, value.song, JukeboxSong.TYPE);
+            buffer.writeBoolean(value.showInTooltip);
+        }
+    };
+    public static final Type<JukeboxPlayable> TYPE1_21_5 = TransformingType.of(
+        new EitherHolderType<>(JukeboxSong.TYPE), JukeboxPlayable.class,
+        song -> new JukeboxPlayable(song, true), JukeboxPlayable::song
+    );
+
+    @Override
+    public JukeboxPlayable rewrite(final UserConnection connection, final Protocol<?, ?, ?, ?> protocol, final boolean clientbound) {
+        if (this.song.hasKey()) {
+            return this;
+        }
+
+        final Holder<JukeboxSong> songHolder = this.song.holder();
+        if (songHolder.hasId()) {
+            return this;
+        }
+
+        final JukeboxSong rewrittenSong = songHolder.value().rewrite(connection, protocol, clientbound);
+        return rewrittenSong == songHolder.value() ? this : new JukeboxPlayable(Holder.of(rewrittenSong), showInTooltip);
+    }
+
+    public record JukeboxSong(Holder<SoundEvent> soundEvent, Tag description,
+                              float lengthInSeconds, int comparatorOutput) implements Rewritable {
+
+        public static final HolderType<JukeboxSong> TYPE = new HolderType<>() {
+            @Override
+            public JukeboxSong readDirect(final ByteBuf buffer) {
+                final Holder<SoundEvent> soundEvent = Types.SOUND_EVENT.read(buffer);
+                final Tag description = Types.TAG.read(buffer);
+                final float lengthInSeconds = buffer.readFloat();
+                final int useDuration = Types.VAR_INT.readPrimitive(buffer);
+                return new JukeboxSong(soundEvent, description, lengthInSeconds, useDuration);
+            }
+
+            @Override
+            public void writeDirect(final ByteBuf buffer, final JukeboxSong value) {
+                Types.SOUND_EVENT.write(buffer, value.soundEvent);
+                Types.TAG.write(buffer, value.description);
+                buffer.writeFloat(value.lengthInSeconds);
+                Types.VAR_INT.writePrimitive(buffer, value.comparatorOutput);
+            }
+
+            @Override
+            public void writeDirect(final Ops ops, final JukeboxSong value) {
+                // Unused, cannot be direct despite having a direct network codec
+                ops.writeMap(map -> map
+                    .write("sound_event", Types.SOUND_EVENT, value.soundEvent)
+                    .write("description", Types.TAG, value.description)
+                    .write("length_in_seconds", Types.FLOAT, value.lengthInSeconds)
+                    .write("comparator_output", Types.INT, value.comparatorOutput));
+            }
+
+            @Override
+            protected Key identifier(final Ops ops, final int id) {
+                return ops.context().registryAccess().registryKey("jukebox_song", id);
+            }
+        };
+
+        @Override
+        public JukeboxSong rewrite(final UserConnection connection, final Protocol<?, ?, ?, ?> protocol, final boolean clientbound) {
+            final Holder<SoundEvent> soundEvent = SoundEvent.rewriteHolder(this.soundEvent, Rewritable.soundRewriteFunction(protocol, clientbound));
+            return soundEvent == this.soundEvent ? this : new JukeboxSong(soundEvent, description, lengthInSeconds, comparatorOutput);
+        }
+    }
+}
