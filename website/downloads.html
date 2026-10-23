@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wyrm - Downloads</title><meta name="description" content="Wyrm is a ViaVersion fork with an Eaglercraft plugin channel bridge: newer clients join older servers."><meta name="theme-color" content="#06060B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2306060B'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23FF6B4A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Urbanist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg-void:#06060B;--bg-surface:#101018;--bg-elevated:#16162A;--text-primary:#F0ECE6;--text-secondary:#B0ACBA;--text-muted:#8B8698;
+--border-subtle:rgba(255,255,255,.06);--border-light:rgba(255,255,255,.10);--accent:#FF6B4A;--accent-soft:#FF8B6E;--accent-dim:rgba(255,107,74,.12);--accent-glow:rgba(255,107,74,.20);--cool:#3A7BD5;
+--sp-sm:8px;--sp-md:16px;--sp-lg:32px;--sp-xl:64px;--sp-2xl:120px;--r-sm:8px;--r-lg:20px;--ease:cubic-bezier(.16,1,.3,1);--dur:.4s}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:'Urbanist',sans-serif;font-size:16px;line-height:1.6;color:var(--text-primary);background:var(--bg-void);overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 60% at 15% 40%,rgba(255,107,74,.04),transparent 70%),radial-gradient(ellipse 70% 50% at 85% 25%,rgba(58,123,213,.03),transparent 70%)}
+h1,h2,h3{font-family:'Syne',sans-serif;font-weight:700;line-height:1.1;letter-spacing:-.02em}
+.label{font-size:14px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
+.container{width:100%;max-width:1280px;margin:0 auto;padding:0 var(--sp-lg);position:relative;z-index:1}
+section{position:relative;z-index:1}
+.skip{position:absolute;top:-100%;left:16px;z-index:200;padding:12px 24px;background:var(--accent);color:#fff;border-radius:var(--r-sm);text-decoration:none;font-weight:600}
+.skip:focus{top:16px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:var(--sp-md) 0;background:rgba(6,6,11,.7);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border-subtle)}
+nav .container{display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--text-primary);text-decoration:none;display:flex;align-items:center;gap:var(--sp-sm)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent-glow);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.links{display:flex;gap:var(--sp-lg);list-style:none}
+.links a{font-size:14px;font-weight:500;color:var(--text-secondary);text-decoration:none;letter-spacing:.04em;position:relative;padding:4px 0;transition:color var(--dur) var(--ease)}
+.links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--accent);transition:width var(--dur) var(--ease)}
+.links a:hover{color:var(--text-primary)}.links a:hover::after{width:100%}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--sp-2xl) 0 var(--sp-xl)}
+.hero .label,.hero-title,.hero-sub,.hero-cta{opacity:0;transform:translateY(24px);animation:up .8s var(--ease) forwards}
+.hero .label{margin-bottom:var(--sp-lg);animation-delay:.2s}
+.hero-title{font-weight:800;font-size:clamp(72px,12vw,140px);letter-spacing:-.04em;line-height:1;margin-bottom:var(--sp-md);animation-delay:.4s;background:linear-gradient(135deg,#fff 0%,var(--text-primary) 40%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:18px;color:var(--text-secondary);max-width:640px;margin-bottom:var(--sp-lg);animation-delay:.6s}
+.hero-cta{display:flex;gap:var(--sp-md);flex-wrap:wrap;justify-content:center;animation-delay:.8s}
+@keyframes up{to{opacity:1;transform:none}}
+.btn{display:inline-block;padding:12px 28px;border-radius:var(--r-sm);font-weight:600;font-size:15px;text-decoration:none;border:1px solid var(--border-light);color:var(--text-primary);transition:all var(--dur) var(--ease)}
+.btn:hover{border-color:rgba(255,107,74,.4);transform:translateY(-2px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.primary:hover{background:var(--accent-soft)}
+.block{padding:var(--sp-xl) 0 var(--sp-2xl)}
+.head{margin-bottom:var(--sp-xl)}.head h2{font-size:clamp(32px,4vw,48px);margin-bottom:var(--sp-sm)}.head p{color:var(--text-secondary);max-width:560px}
+.panel,.card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-lg);padding:var(--sp-lg);position:relative;overflow:hidden;transition:transform var(--dur) var(--ease),border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+.panel::before,.card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,var(--accent-dim),transparent 70%);opacity:0;transition:opacity .5s var(--ease);pointer-events:none}
+.panel:hover::before,.card:hover::before{opacity:1}
+.card:hover{transform:translateY(-4px);border-color:rgba(255,107,74,.15);box-shadow:0 16px 48px rgba(0,0,0,.3)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-lg)}
+.num{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,3.2vw,48px);letter-spacing:-.03em;line-height:1;margin-bottom:var(--sp-sm)}.num.accent{color:var(--accent)}
+.card h3{font-size:18px;font-family:'Urbanist',sans-serif;font-weight:600;letter-spacing:0;margin-bottom:4px}
+.card p{font-size:14px;color:var(--text-muted);line-height:1.5}
+.flow{display:flex;align-items:stretch;justify-content:center;gap:var(--sp-md);flex-wrap:wrap}
+.node{flex:1;min-width:200px;text-align:center;background:var(--bg-elevated);border:1px solid var(--border-light);border-radius:var(--r-sm);padding:var(--sp-md)}
+.node b{display:block;font-family:'Syne',sans-serif;font-size:20px}.node span{color:var(--text-muted);font-size:14px}
+.node.mid{border-color:rgba(255,107,74,.4);box-shadow:0 0 32px var(--accent-dim)}
+.arrow{align-self:center;color:var(--accent);font-size:28px}
+pre{background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--r-sm);padding:var(--sp-md);overflow-x:auto;font-size:14px;color:var(--text-secondary);margin-top:var(--sp-md)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-subtle)}th{color:var(--text-secondary);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}td{color:var(--text-muted)}td:first-child{color:var(--text-primary)}
+.ok{color:#6fcf97}.no{color:var(--accent)}
+footer{border-top:1px solid var(--border-subtle);padding:var(--sp-xl) 0;position:relative;z-index:1}
+footer .container{display:flex;justify-content:space-between;gap:var(--sp-lg);flex-wrap:wrap}
+footer p{font-size:14px;color:var(--text-muted)}footer a{color:var(--accent);text-decoration:none}footer a:hover{color:var(--accent-soft)}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-void)}::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:3px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.links{gap:var(--sp-md)}.container{padding:0 20px}.arrow{transform:rotate(90deg);width:100%;text-align:center}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.hero .label,.hero-title,.hero-sub,.hero-cta{opacity:1;transform:none}}
+.page-top{padding-top:140px}.links a[aria-current]::after{width:100%}</style></head><body>
+<a class="skip" href="#main">Skip to content</a>
+<nav><div class="container"><a class="logo" href="index.html"><span class="dot"></span>Wyrm</a>
+<ul class="links"><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="status.html">Status</a></li><li><a href="downloads.html" aria-current='page' style='color:var(--text-primary)'>Downloads</a></li><li><a href="licence.html">Licence</a></li><li><a href="https://github.com/eaglercraft-clients/viaversion">GitHub</a></li></ul></div></nav>
+<main id="main"><section class="block page-top"><div class="container"><div class="head"><p class="label">Downloads</p><h2>Get Wyrm</h2><p>Releases are built by GitHub Actions from tagged commits. Every release contains the server jar.</p></div>
+<div class="grid"><div class="card"><h3>Latest release</h3><p>Jar and release notes.</p><p style="margin-top:12px"><a class="btn primary" href="https://github.com/eaglercraft-clients/viaversion/releases/latest">Open releases</a></p></div>
+<div class="card"><h3>Latest build</h3><p>Every push builds a jar you can download from the Actions tab (needs a GitHub login).</p><p style="margin-top:12px"><a class="btn" href="https://github.com/eaglercraft-clients/viaversion/actions">Open Actions</a></p></div>
+<div class="card"><h3>Source</h3><p>Build it yourself with <code>./gradlew build</code> on JDK 17 or newer.</p><p style="margin-top:12px"><a class="btn" href="https://github.com/eaglercraft-clients/viaversion">View source</a></p></div></div></div></section></main>
+<footer><div class="container"><div><p>Licensed under GPL-3.0-or-later. Fork of ViaVersion by the ViaVersion team.</p><p><a href="https://github.com/eaglercraft-clients/viaversion">Source</a> &middot; <a href="licence.html">Licence</a> &middot; <a href="https://github.com/eaglercraft-clients/viaversion/blob/main/NOTICE.md">Notice</a></p></div>
+<div><p>Not affiliated with Mojang, Microsoft or ViaVersion. &ldquo;Minecraft&rdquo; is a trademark of Mojang AB.</p></div></div></footer>
+</body></html>
