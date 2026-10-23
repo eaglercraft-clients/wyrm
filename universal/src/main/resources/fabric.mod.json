@@ -6,9 +6,9 @@
   "description": "${description}",
   "license": "GPL-3.0",
   "contact": {
-    "homepage": "https://viaversion.com/",
-    "issues": "https://github.com/ViaVersion/ViaVersion/issues",
-    "sources": "https://github.com/ViaVersion/ViaVersion"
+    "homepage": "https://github.com/eaglercraft-clients/viaversion",
+    "issues": "https://github.com/eaglercraft-clients/viaversion/issues",
+    "sources": "https://github.com/eaglercraft-clients/viaversion"
   },
   "icon": "assets/viaversion/textures/squarelogo.png",
   "environment": "*",

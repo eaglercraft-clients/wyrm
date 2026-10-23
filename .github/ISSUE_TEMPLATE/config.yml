@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Dev builds
-    url: https://ci.viaversion.com/
-    about: Before reporting a bug, please check if using master/dev builds from our ci fixes your issue.
-  - name: ViaVersion Discord
-    url: https://discord.gg/viaversion
-    about: For smaller issues or questions, you can also join our Discord server.
+  - name: Upstream ViaVersion
+    url: https://github.com/ViaVersion/ViaVersion
+    about: Problems that also happen with upstream ViaVersion belong there.
