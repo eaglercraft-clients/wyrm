@@ -1,0 +1,106 @@
+/*
+ * This file is part of ViaRewind - https://github.com/ViaVersion/ViaRewind
+ * Copyright (C) 2018-2026 ViaVersion and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.viaversion.viarewind.protocol.v1_9to1_8.storage;
+
+import com.viaversion.viarewind.protocol.v1_9to1_8.Protocol1_9To1_8;
+import com.viaversion.viaversion.api.connection.StorableObject;
+import com.viaversion.viaversion.api.protocol.packet.PacketWrapper;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+public class PlayerPositionTracker implements StorableObject {
+
+    private final Queue<PacketWrapper> animations = new ConcurrentLinkedQueue<>();
+    private final Queue<PendingTeleport> pendingTeleports = new ConcurrentLinkedQueue<>();
+    private double posX, posY, posZ;
+    private float yaw, pitch;
+    private boolean onGround;
+
+    public void setPos(double x, double y, double z) {
+        this.posX = x;
+        this.posY = y;
+        this.posZ = z;
+    }
+
+    public void sendAnimations() {
+        PacketWrapper wrapper;
+        while ((wrapper = animations.poll()) != null) {
+            wrapper.sendToServer(Protocol1_9To1_8.class);
+        }
+    }
+
+    public void queueAnimation(final PacketWrapper wrapper) {
+        animations.add(wrapper);
+    }
+
+    public double getPosX() {
+        return this.posX;
+    }
+
+    public double getPosY() {
+        return this.posY;
+    }
+
+    public double getPosZ() {
+        return this.posZ;
+    }
+
+    public float getYaw() {
+        return this.yaw;
+    }
+
+    public void setYaw(float yaw) {
+        this.yaw = yaw % 360f;
+    }
+
+    public float getPitch() {
+        return this.pitch;
+    }
+
+    public void setPitch(float pitch) {
+        this.pitch = pitch % 360f;
+    }
+
+    public boolean isOnGround() {
+        return this.onGround;
+    }
+
+    public void setOnGround(boolean onGround) {
+        this.onGround = onGround;
+    }
+
+    public boolean hasPendingTeleports() {
+        return !this.pendingTeleports.isEmpty();
+    }
+
+    public void queueTeleport(final int id, final double x, final double y, final double z, final float yaw, final float pitch, final boolean viewRelative) {
+        this.pendingTeleports.add(new PendingTeleport(id, x, y, z, yaw, pitch, viewRelative));
+    }
+
+    public PendingTeleport peekTeleport() {
+        return this.pendingTeleports.peek();
+    }
+
+    public void confirmTeleport() {
+        this.pendingTeleports.poll();
+    }
+
+    public record PendingTeleport(int id, double x, double y, double z, float yaw, float pitch, boolean viewRelative) {
+    }
+
+}
