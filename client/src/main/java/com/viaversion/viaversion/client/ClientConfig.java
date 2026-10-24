@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-/** Via's settings inside a client: defaults plus the few choices a client makes, in memory only. */
+/**
+ * Via's settings inside a client: defaults plus the few choices a client makes, in memory only. Give it a file name
+ * without a directory, so that reloading never tries to create one.
+ */
 final class ClientConfig extends AbstractViaConfig {
 
     ClientConfig(final File file, final Logger logger) {

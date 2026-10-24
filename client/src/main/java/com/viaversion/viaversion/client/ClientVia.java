@@ -135,11 +135,15 @@ public final class ClientVia {
     /**
      * Starts Via if it is not running and waits for its mapping data. Blocks, so call it off the render thread, and
      * before the first connection opens so a slow first load cannot make the connection idle out.
+     *
+     * @param addons run once, when Via first starts, after it is up and before it works out its protocol paths. Wyvern
+     *               registers its protocols here (see its {@code WyvernClient}), which is what makes servers newer than
+     *               the game reachable. Ignored if Via is already running.
      */
-    public static void start() {
+    public static void start(final Runnable... addons) {
         synchronized (LOCK) {
             if (!started) {
-                doStart();
+                doStart(addons);
                 started = true;
             }
         }
@@ -160,7 +164,7 @@ public final class ClientVia {
         }
     }
 
-    private static void doStart() {
+    private static void doStart(final Runnable[] addons) {
         final long began = System.currentTimeMillis();
         final Platform platform = new Platform(new File("via"), clientName, clientVersion);
         final ViaManagerImpl manager = ViaManagerImpl.builder()
@@ -173,6 +177,9 @@ public final class ClientVia {
         platform.getConf().reload();
         manager.init();
         manager.onServerLoaded();
+        for (final Runnable addon : addons) {
+            addon.run();
+        }
         final ProtocolManagerImpl protocols = (ProtocolManagerImpl) manager.getProtocolManager();
         // A client can take any path to a server, however long.
         protocols.setMaxProtocolPathSize(Integer.MAX_VALUE);
@@ -204,7 +211,7 @@ public final class ClientVia {
             this.folder = folder;
             this.name = name;
             this.version = version;
-            this.config = new ClientConfig(new File(folder, "viaversion.yml"), LOGGER);
+            this.config = new ClientConfig(new File("viaversion.yml"), LOGGER);
         }
 
         @Override
