@@ -37,6 +37,7 @@ game-agnostic parts and has no dependency on any game classes:
 ```java
 ClientVia.setClient("MyClient", "26.2");
 ClientVia.start(new WyvernClient());      // off the render thread; WyvernClient (from Wyvern) is optional, for newer servers
+// 1.8 game: ClientVia.start(new WyvernClient(), new RewindClient());  // RewindClient from Wyvern's rewind module
 if (ClientVia.supports(nativeProtocol, serverProtocol)) {
     ClientPipeline.install(channel, serverProtocol, "splitter", "prepender");   // after the framing handlers
     EaglerLogin login = new EaglerLogin(serverProtocol, name, uuid);            // swallow/hold/takeLoginSuccess, see its javadoc
@@ -44,7 +45,7 @@ if (ClientVia.supports(nativeProtocol, serverProtocol)) {
 ```
 
 Tests push a 26.2 handshake and login through the pipeline to 1.8, 1.12.2 and 1.21 servers and check the bytes
-(`ClientViaTest`); Wyvern's tests cover older games joining newer servers. A 1.8 game going up needs ViaRewind as well. They run on the JVM with Netty's embedded channel: **nothing here has been compiled with TeaVM or run in
+(`ClientViaTest`); Wyvern's tests cover older games joining newer servers. A 1.8 game going up also needs Wyvern's `rewind` module (`new RewindClient()`), tested the same way in Wyvern. They run on the JVM with Netty's embedded channel: **nothing here has been compiled with TeaVM or run in
 a browser**.
 
 ## Honest status
