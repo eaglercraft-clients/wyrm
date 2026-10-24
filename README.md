@@ -22,6 +22,22 @@ It is a fork, licensed GPL-3.0-or-later; see [NOTICE.md](NOTICE.md) and [THIRD_P
 | Older versions than the server, down to 1.9 | Wyrm + [Wyvern](https://github.com/eaglercraft-clients/wyvern) |
 | 1.7.x to 1.8.x | Wyrm + Wyvern + ViaRewind (copy in [`third_party/viarewind`](third_party/viarewind)) |
 
+## In the client (`client` module)
+
+Eaglercraft clients that embed Via instead of relying on a proxy can use the `viaversion-client` module. It holds the
+game-agnostic parts and has no dependency on any game classes:
+
+- `ClientVia`: starts Via once, as a proxy-like platform named after the client; lists releases; `supports(native, server)`
+  asks Via for a protocol path, so servers newer than the game count only when Wyvern's protocols are registered.
+- `ClientPipeline.install(channel, serverProtocol, splitter, prepender)`: adds Via to a connection's Netty pipeline
+  (hand-written handlers, because dropping packets by throwing is slow under TeaVM).
+- `EaglerLogin`: an Eagler proxy logs the player in to its backend itself, so the game's handshake and Login Start are
+  swallowed and a Login Success in the server's protocol is handed back for Via to translate.
+
+Tests push a 26.2 handshake and login through the pipeline to 1.8, 1.12.2 and 1.21 servers and check the bytes
+(`ClientViaTest`). They run on the JVM with Netty's embedded channel: **nothing here has been compiled with TeaVM or run in
+a browser**.
+
 ## Honest status
 
 CI compiles and runs the unit tests. The bridge has not been tested with a real Eaglercraft client and server yet.

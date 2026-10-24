@@ -34,6 +34,7 @@ setupViaSubproject("common")
 setupViaSubproject("bukkit")
 setupViaSubproject("bukkit-legacy")
 setupViaSubproject("velocity")
+setupViaSubproject("client")
 
 //include("benchmark")
 
