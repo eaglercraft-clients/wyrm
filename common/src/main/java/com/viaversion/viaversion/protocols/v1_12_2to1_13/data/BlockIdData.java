@@ -17,7 +17,9 @@
  */
 package com.viaversion.viaversion.protocols.v1_12_2to1_13.data;
 
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.viaversion.viaversion.protocols.v1_12_2to1_13.Protocol1_12_2To1_13;
 import com.viaversion.viaversion.util.GsonUtil;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -41,11 +43,16 @@ public class BlockIdData {
         InputStream stream = MappingData1_13.class.getClassLoader()
             .getResourceAsStream("assets/viaversion/data/blockIds1.12to1.13.json");
         try (InputStreamReader reader = new InputStreamReader(stream)) {
-            Map<String, String[]> map = GsonUtil.getGson().fromJson(
-                reader,
-                new TypeToken<Map<String, String[]>>() {
-                }.getType());
-            blockIdMapping.putAll(map);
+            // Plain JsonObject traversal instead of a TypeToken: no reflection on generic types (TeaVM keeps none)
+            final JsonObject root = GsonUtil.getGson().fromJson(reader, JsonObject.class);
+            for (final Map.Entry<String, JsonElement> entry : root.entrySet()) {
+                final JsonArray values = entry.getValue().getAsJsonArray();
+                final String[] ids = new String[values.size()];
+                for (int i = 0; i < ids.length; i++) {
+                    ids[i] = values.get(i).getAsString();
+                }
+                blockIdMapping.put(entry.getKey(), ids);
+            }
 
             Map<String, List<String>> reverse = new HashMap<>();
             for (Map.Entry<String, String[]> entry : blockIdMapping.entrySet()) {
@@ -61,12 +68,10 @@ public class BlockIdData {
         InputStream blockS = MappingData1_13.class.getClassLoader()
             .getResourceAsStream("assets/viaversion/data/blockNumberToString1.12.json");
         try (InputStreamReader blockR = new InputStreamReader(blockS)) {
-            Map<Integer, String> map = GsonUtil.getGson().fromJson(
-                blockR,
-                new TypeToken<Map<Integer, String>>() {
-                }.getType()
-            );
-            numberIdToString.putAll(map);
+            final JsonObject root = GsonUtil.getGson().fromJson(blockR, JsonObject.class);
+            for (final Map.Entry<String, JsonElement> entry : root.entrySet()) {
+                numberIdToString.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsString());
+            }
         } catch (IOException e) {
             Protocol1_12_2To1_13.LOGGER.log(Level.SEVERE, "Failed to load block number to string mappings", e);
         }

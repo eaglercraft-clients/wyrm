@@ -75,7 +75,7 @@ public final class EaglerLogin {
                 state = LOGIN_START;
                 return true;
             case LOGIN_START:
-                success = loginSuccess();
+                success = loginSuccess(serverProtocol, name, uuid);
                 state = serverProtocol >= LOGIN_ACKNOWLEDGED ? ACKNOWLEDGEMENT : PLAY;
                 return true;
             case ACKNOWLEDGEMENT:
@@ -115,7 +115,11 @@ public final class EaglerLogin {
         return out;
     }
 
-    private byte[] loginSuccess() {
+    /**
+     * A Login Success packet (packet id first, no length prefix) in the format of {@code serverProtocol}, as the server
+     * would have sent it. For a client that injects the login itself instead of using this class's swallow/hold calls.
+     */
+    public static byte[] loginSuccess(final int serverProtocol, final String name, final UUID uuid) {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         varInt(out, 0x02);
         if (serverProtocol >= BINARY_UUID) {
