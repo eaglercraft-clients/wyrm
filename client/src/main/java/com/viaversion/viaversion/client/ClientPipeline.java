@@ -19,6 +19,7 @@ package com.viaversion.viaversion.client;
 
 import com.viaversion.viaversion.api.connection.UserConnection;
 import com.viaversion.viaversion.api.protocol.packet.Direction;
+import com.viaversion.viaversion.api.protocol.packet.State;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
 import com.viaversion.viaversion.connection.UserConnectionImpl;
 import com.viaversion.viaversion.exception.CancelCodecException;
@@ -79,7 +80,7 @@ public final class ClientPipeline {
         final Relay relay = new Relay();
         channel.pipeline().addAfter(splitter, DECODER, new Decoder(user));
         channel.pipeline().addAfter(DECODER, RELAY, relay);
-        channel.pipeline().addAfter(prepender, ENCODER, new Encoder(user, relay));
+        channel.pipeline().addAfter(prepender, ENCODER, new Encoder(user, relay, server.getVersion()));
         return user;
     }
 
@@ -202,11 +203,23 @@ public final class ClientPipeline {
 
         private final UserConnection user;
         private final Relay relay;
+        private final int serverProtocol;
+        private TeleportAckOrder ackOrder;
+        private boolean ackOrderResolved;
         private int traced;
 
-        Encoder(final UserConnection user, final Relay relay) {
+        Encoder(final UserConnection user, final Relay relay, final int serverProtocol) {
             this.user = user;
             this.relay = relay;
+            this.serverProtocol = serverProtocol;
+        }
+
+        private boolean playing() {
+            try {
+                return user.getProtocolInfo().getState(Direction.SERVERBOUND) == State.PLAY;
+            } catch (final RuntimeException e) {
+                return false;
+            }
         }
 
         private ByteBuf encode(final ChannelHandlerContext ctx, final ByteBuf in) throws Exception {
@@ -262,7 +275,35 @@ public final class ClientPipeline {
                 promise.trySuccess();
                 return;
             }
+            if (playing() && !ackOrderResolved) {
+                // the translation path is known once the game is in play
+                ackOrderResolved = true;
+                ackOrder = TeleportAckOrder.forServer(user, serverProtocol);
+            }
+            if (ackOrder != null && playing()) {
+                // a teleport's acknowledgement goes after the position that follows it (see TeleportAckOrder)
+                final ByteBuf[] order = ackOrder.next(out);
+                if (order.length == 0) {
+                    promise.trySuccess();
+                    return;
+                }
+                for (int i = 0; i < order.length - 1; ++i) {
+                    ctx.write(order[i], ctx.newPromise());
+                }
+                ctx.write(order[order.length - 1], promise);
+                return;
+            }
             ctx.write(out, promise);
+        }
+
+        @Override
+        public void handlerRemoved(final ChannelHandlerContext ctx) {
+            if (ackOrder != null) {
+                final ByteBuf held = ackOrder.takeHeld();
+                if (held != null) {
+                    held.release();
+                }
+            }
         }
     }
 
